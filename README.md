@@ -501,15 +501,32 @@ az aks upgrade --kubernetes-version 1.19.7 --name $AKS_CLUSTER --resource-group 
 # Upgrade the nodepools along with control-plane
 az aks upgrade --kubernetes-version 1.19.7 --name $AKS_CLUSTER --resource-group $AKS_RESOURCE_GROUP
 
+```
+### Set max surge
+```
+# Set max surge for a new node pool
+az aks nodepool add -n mynodepool -g MyResourceGroup --cluster-name MyManagedCluster --max-surge 33%
+
+# Update max surge for an existing node pool 
+az aks nodepool update -n mynodepool -g MyResourceGroup --cluster-name MyManagedCluster --max-surge 5
+```
+### Get the available upgrade versions for an agent pool of the managed Kubernetes cluster
+```
+az aks nodepool get-upgrades --resource-group MyResourceGroup --cluster-name MyManagedCluster --nodepool-name MyNodePool
+```
+### Upgrade the nodepools manually one by one
+
+```
 # Upgrade a specific nodepool to specific kubernetes-version 
 az aks nodepool upgrade --resource-group $AKS_RESOURCE_GROUP --cluster-name $AKS_CLUSTER --name systempool --kubernetes-version 1.19.7 
 
 # Check the all nodepool list
 az aks nodepool list -g $AKS_RESOURCE_GROUP --cluster-name $AKS_CLUSTER -o table
+```
+- **Alternatively update the control-plane-only then add the new nodepool with same labels and configuration**
+- **Cordon the old node then do the rolling update on deployments and delete the old node pool**
 
-# Alternatively update the control-plane-only then add the new nodepool with same labels and configuration
-# Cordon the old node then do the rolling update on deployments and delete the old node pool
-
+```
 kubectl cordon nodename
 
 az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
@@ -527,7 +544,13 @@ az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
                     --tags nodepool-type=system nodepoolos=linux app=system-apps \
                     --zones {1,2,3}
 ```
-### Delete the old node pool without showing the delete process
+### Delete the old node pool without showing the running process
 ```
 az aks nodepool delete -g $AKS_RESOURCE_GROUP  --cluster-name $AKS_CLUSTER --name systempool --no-wait
 ```
+
+- **Reference Documentation Links**
+- https://docs.microsoft.com/en-us/cli/azure/aks?view=azure-cli-latest#az_aks_upgrade
+- https://docs.microsoft.com/en-us/cli/azure/ext/aks-preview/aks/nodepool?view=azure-cli-latest#ext_aks_preview_az_aks_nodepool_get_upgrades
+- https://docs.microsoft.com/en-us/cli/azure/ext/aks-preview/aks/nodepool?view=azure-cli-latest#ext_aks_preview_az_aks_nodepool_upgrade
+- https://docs.microsoft.com/en-us/cli/azure/ext/aks-preview/aks/nodepool?view=azure-cli-latest#ext_aks_preview_az_aks_nodepool_add
