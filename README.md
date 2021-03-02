@@ -130,7 +130,7 @@ az acr create --name $ACR_NAME --resource-group ${AKS_RESOURCE_GROUP} --sku Stan
 # Import a docker image from public docker hub to acr
 az acr import  -n $ACR_NAME --source docker.io/library/nginx:1.19.0 --image nginx:1.19.0
 ```
-- **Note: This is used in CI/CD tool only . Not required for aks**
+- **Note: The below step required for  CI/CD tool only . Not required for aks**
 ### Create a service principal for push and pull the images from acr 
 
 ```
@@ -168,6 +168,184 @@ echo "Service principal password: $SP_PASSWD"
 - **Log in to Docker with service principal credentials**
 
 ```
-docker login phaniacr.azurecr.io --username $SP_APP_ID --password $SP_PASSWD
+docker login myacr.azurecr.io --username $SP_APP_ID --password $SP_PASSWD
 ```
 
+### List Kubernetes Versions available as on today
+
+```
+az aks get-versions --location ${AKS_REGION} -o table
+```
+
+- **Set Cluster Name**
+
+```
+AKS_CLUSTER=akscluster
+echo $AKS_CLUSTER
+```
+
+### Upgrade az CLI  (To latest version)
+```
+az --version
+az upgrade
+```
+
+### Create AKS cluster
+
+```
+az aks create --resource-group ${AKS_RESOURCE_GROUP} \
+              --location ${AKS_REGION} \
+              --name ${AKS_CLUSTER} \
+              --kubernetes-version 1.18.10 \
+              --enable-managed-identity \
+              --ssh-key-value  ${AKS_SSH_KEY_LOCATION} \
+              --admin-username aksnodeadmin \
+              --node-count 1 \
+              --enable-cluster-autoscaler \
+              --min-count 1 \
+              --max-count 2 \
+              --network-plugin azure \
+              --service-cidr 10.0.0.0/16 \
+              --dns-service-ip 10.0.0.10 \
+              --docker-bridge-address 172.17.0.1/16 \
+              --vnet-subnet-id ${AKS_VNET_SUBNET_DEFAULT_ID} \
+              --node-osdisk-size 30 \
+              --node-vm-size Standard_DS2_v2 \
+              --nodepool-labels nodepool-type=system nodepoolos=linux app=system-apps \
+              --nodepool-name systempool \
+              --nodepool-tags nodepool-type=system nodepoolos=linux app=system-apps \
+              --enable-addons monitoring \
+              --workspace-resource-id ${AKS_MONITORING_LOG_ANALYTICS_WORKSPACE_ID} \
+              --load-balancer-sku standard \
+              --outbound-type loadBalancer \
+              --attach-acr $ACR_NAME \
+              --zones {1,2,3} --yes
+```
+
+### Configure Credentials
+
+```
+az aks get-credentials --name ${AKS_CLUSTER}  --resource-group ${AKS_RESOURCE_GROUP} --overwrite-existing
+```
+
+### Cluster Info
+
+```
+kubectl cluster-info
+```
+
+
+### List Node Pools
+
+```
+az aks nodepool list --cluster-name ${AKS_CLUSTER} --resource-group ${AKS_RESOURCE_GROUP} -o table
+```
+
+### Check the current aks cluster kubernetes-version
+
+```
+az aks show --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_CLUSTER} --query kubernetesVersion --output table
+```
+
+### List which pods are running in system nodepool from kube-system namespace
+
+```
+kubectl get pod -o=custom-columns=NODE-NAME:.spec.nodeName,POD-NAME:.metadata.name -n kube-system
+```
+
+### Get the MSI of our AKS cluster
+
+```
+az aks show -g ${AKS_RESOURCE_GROUP} -n ${AKS_CLUSTER} --query "identity"
+```
+
+- **Reference Documentation Links**
+- https://docs.microsoft.com/en-us/azure/aks/cluster-autoscaler
+- https://docs.microsoft.com/en-us/cli/azure/aks?view=azure-cli-latest#az_aks_create
+- https://docs.microsoft.com/en-us/cli/azure/aks?view=azure-cli-latest
+
+***
+
+### Enable the application gateway addon feature in azure account
+
+- **Reference Documentation Links**
+- https://docs.microsoft.com/en-us/azure/application-gateway/tutorial-ingress-controller-add-on-new
+
+```
+az extension add --name aks-preview
+
+# Enable application gateway addon 
+az feature register --name AKS-IngressApplicationGatewayAddon --namespace Microsoft.ContainerService
+
+# Check the Register status. it may take few minutes
+az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/AKS-IngressApplicationGatewayAddon')].{Name:name,State:properties.state}"
+
+# Refresh the registration of the Microsoft.ContainerService resource provider
+az provider register --namespace Microsoft.ContainerService
+```
+
+### Create the new namespace
+
+```
+kubectl create ns web-server
+```
+
+### Enable addon for aks cluster
+
+```
+az aks enable-addons --name ${AKS_CLUSTER} --resource-group ${AKS_RESOURCE_GROUP} --addons ingress-appgw --appgw-subnet-id $APPGW_SUBNET_ID --appgw-name $APPGW_NAME --appgw-watch-namespace web-server,default
+```
+
+### Check the ssl certificate list in application gateway
+
+```
+az network application-gateway ssl-cert list -g MC_${AKS_RESOURCE_GROUP}_${AKS_CLUSTER}_${AKS_REGION} --gateway-name ${APPGW_NAME}
+```
+
+### Configure the ssl in application gateway
+
+- **Fist generate the letsencrypt ssl using certbot or purchase the ssl
+
+### Convert pem to pfx
+
+```
+CERT_PASSWD=1234
+openssl pkcs12 -export -out certificate.pfx -inkey privkey1.pem -in fullchain1.pem -password pass:$CERT_PASSWD
+```
+
+### Convert pem to cer
+
+```
+openssl x509 -inform PEM -in fullchain1.pem -outform DER -out certificate.cer
+```
+
+### Add ssl to application gateway
+
+```
+CERT_NAME=myssl
+
+az network application-gateway ssl-cert create -g MC_${AKS_RESOURCE_GROUP}_${AKS_CLUSTER}_${AKS_REGION} --gateway-name $APPGW_NAME \
+    -n $CERT_NAME --cert-file certificate.pfx --cert-password $CERT_PASSWD
+
+az network application-gateway ssl-cert list -g MC_${AKS_RESOURCE_GROUP}_${AKS_CLUSTER}_${AKS_REGION} --gateway-name ${APPGW_NAME}
+
+az network application-gateway ssl-cert show  -g MC_${AKS_RESOURCE_GROUP}_${AKS_CLUSTER}_${AKS_REGION} --gateway-name ${APPGW_NAME} -n $CERT_NAME
+```
+
+- **Reference Documentation Links**
+
+- https://github.com/Azure/application-gateway-kubernetes-ingress/tree/master/docs/examples/sample-app
+
+- https://azure.github.io/application-gateway-kubernetes-ingress/annotations/#ssl-redirect
+
+- https://azure.github.io/application-gateway-kubernetes-ingress/features/appgw-ssl-certificate/
+
+- https://docs.microsoft.com/en-us/cli/azure/network/application-gateway/ssl-cert?view=azure-cli-latest
+
+### Another method for add the ssl
+
+```
+kubectl create secret tls sample-app-tls \
+    --key privkey1.pem \
+    --cert fullchain1.pem
+```
