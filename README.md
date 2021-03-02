@@ -464,3 +464,70 @@ az aks check-acr --name $AKS_CLUSTER --resource-group $AKS_RESOURCE_GROUP --acr 
 
 ***
 ***
+
+# Upgrade the AKS Cluster using cli
+
+### Export the envs
+```
+AKS_RESOURCE_GROUP=aks-rg
+AKS_REGION=centralus
+echo $AKS_RESOURCE_GROUP, $AKS_REGION
+AKS_CLUSTER=akscluster
+echo $AKS_CLUSTER
+```
+
+### Configure auto update for aks cluster
+```
+# Auto update for new cluster
+az aks create --resource-group myResourceGroup --name myAKSCluster --auto-upgrade-channel stable --generate-ssh-keys
+
+# Auto update for existing cluster
+az aks update --resource-group myResourceGroup --name myAKSCluster --auto-upgrade-channel stable
+```
+
+### Upgrade the cluster manually
+```
+# Show all available aks versions
+az aks show --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER --output table
+
+# Show the supported updates available for current aks cluster
+az aks get-upgrades --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER --output table
+
+
+# Current version is 1.18.10
+# Upgrade only the control-plane and update the nodepools separately
+az aks upgrade --kubernetes-version 1.19.7 --name $AKS_CLUSTER --resource-group $AKS_RESOURCE_GROUP --control-plane-only --yes
+
+# Upgrade the nodepools along with control-plane
+az aks upgrade --kubernetes-version 1.19.7 --name $AKS_CLUSTER --resource-group $AKS_RESOURCE_GROUP
+
+# Upgrade a specific nodepool to specific kubernetes-version 
+az aks nodepool upgrade --resource-group $AKS_RESOURCE_GROUP --cluster-name $AKS_CLUSTER --name systempool --kubernetes-version 1.19.7 
+
+# Check the all nodepool list
+az aks nodepool list -g $AKS_RESOURCE_GROUP --cluster-name $AKS_CLUSTER -o table
+
+# Alternatively update the control-plane-only then add the new nodepool with same labels and configuration
+# Cordon the old node then do the rolling update on deployments and delete the old node pool
+
+kubectl cordon nodename
+
+az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
+                    --cluster-name ${AKS_CLUSTER} \
+                    --kubernetes-version 1.19.7 \
+                    --name syspv1197 \
+                    --node-count 1 \
+                    --enable-cluster-autoscaler \
+                    --max-count 2 \
+                    --min-count 1 \
+                    --mode System \
+                    --node-vm-size Standard_DS2_v2 \
+                    --os-type Linux \
+                    --labels nodepool-type=system nodepoolos=linux app=system-apps \
+                    --tags nodepool-type=system nodepoolos=linux app=system-apps \
+                    --zones {1,2,3}
+```
+### Delete the old node pool without showing the delete process
+```
+az aks nodepool delete -g $AKS_RESOURCE_GROUP  --cluster-name $AKS_CLUSTER --name systempool --no-wait
+```
