@@ -435,3 +435,32 @@ az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
                     --tags nodepool-type=user  nodepoolos=linux server=apps \
                     --zones {1,2,3}
 ```
+
+### Check the nodepool list
+
+```
+az aks nodepool list -g $AKS_RESOURCE_GROUP --cluster-name $AKS_CLUSTER -o table
+```
+
+### Check the node zones
+
+```
+kubectl get nodes
+
+kubectl get nodes -o custom-columns=NAME:'{.metadata.name}',REGION:'{.metadata.labels.topology\.kubernetes\.io/region}',ZONE:'{metadata.labels.topology\.kubernetes\.io/zone}'
+```
+
+### Check the acr access to aks 
+
+```
+AKS_RESOURCE_GROUP=aks-rg
+AKS_REGION=centralus
+echo $AKS_RESOURCE_GROUP, $AKS_REGION
+AKS_CLUSTER=akscluster
+echo $AKS_CLUSTER
+
+az aks check-acr --name $AKS_CLUSTER --resource-group $AKS_RESOURCE_GROUP --acr myacr.azurecr.io
+```
+
+***
+***
