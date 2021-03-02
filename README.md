@@ -130,41 +130,44 @@ az acr create --name $ACR_NAME --resource-group ${AKS_RESOURCE_GROUP} --sku Stan
 # Import a docker image from public docker hub to acr
 az acr import  -n $ACR_NAME --source docker.io/library/nginx:1.19.0 --image nginx:1.19.0
 ```
-- ***Note: This is used in CI/CD tool only . Not required for aks ***
+- **Note: This is used in CI/CD tool only . Not required for aks**
 ### Create a service principal for push and pull the images from acr 
 
 ```
 SERVICE_PRINCIPAL_NAME=acr-service-principal
+```
 
-# Obtain the full registry ID for subsequent command args
+- **Obtain the full registry ID for subsequent command args**
+
+```
 ACR_REGISTRY_ID=$(az acr show --name $ACR_NAME --query id --output tsv)
 ```
 
-***
-Create the service principal with rights scoped to the registry.
-Default permissions are for docker pull access. Modify the '--role'
-argument value as desired:
-acrpull:     pull only
-acrpush:     push and pull
-owner:       push, pull, and assign roles
-***
+
+- **Create the service principal with rights scoped to the registry.**
+- **Default permissions are for docker pull access. Modify the '--role'**
+- **argument value as desired:**
+- **acrpull:     pull only**
+- **acrpush:     push and pull**
+- **owner:       push, pull, and assign roles**
+
 
 ```
 SP_PASSWD=$(az ad sp create-for-rbac --name http://$SERVICE_PRINCIPAL_NAME --scopes $ACR_REGISTRY_ID --role acrpush --query password --output tsv)
 SP_APP_ID=$(az ad sp show --id http://$SERVICE_PRINCIPAL_NAME --query appId --output tsv)
 ```
-***
-# Output the service principal's credentials; use these in your services and
-# applications to authenticate to the container registry.
+
+- **Output the service principal's credentials; use these in your services and**
+- **applications to authenticate to the container registry.**
 ***
 
 ```
 echo "Service principal ID: $SP_APP_ID"
 echo "Service principal password: $SP_PASSWD"
 ```
-*** Log in to Docker with service principal credentials ***
+- **Log in to Docker with service principal credentials**
+
 ```
 docker login phaniacr.azurecr.io --username $SP_APP_ID --password $SP_PASSWD
 ```
-
 
