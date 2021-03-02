@@ -157,9 +157,7 @@ SP_PASSWD=$(az ad sp create-for-rbac --name http://$SERVICE_PRINCIPAL_NAME --sco
 SP_APP_ID=$(az ad sp show --id http://$SERVICE_PRINCIPAL_NAME --query appId --output tsv)
 ```
 
-- **Output the service principal's credentials; use these in your services and**
-- **applications to authenticate to the container registry.**
-***
+- **Output the service principal's credentials; use these in your services and applications to authenticate to the container registry.**
 
 ```
 echo "Service principal ID: $SP_APP_ID"
@@ -304,7 +302,7 @@ az network application-gateway ssl-cert list -g MC_${AKS_RESOURCE_GROUP}_${AKS_C
 
 ### Configure the ssl in application gateway
 
-- **Fist generate the letsencrypt ssl using certbot or purchase the ssl
+- **First generate the letsencrypt ssl using certbot or purchase the ssl**
 
 ### Convert pem to pfx
 
