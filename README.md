@@ -347,3 +347,91 @@ kubectl create secret tls sample-app-tls \
     --key privkey1.pem \
     --cert fullchain1.pem
 ```
+
+***
+
+### Add additional nodepools to aks cluster 
+
+```
+AKS_RESOURCE_GROUP=aks-rg
+AKS_REGION=centralus
+echo $AKS_RESOURCE_GROUP, $AKS_REGION
+AKS_CLUSTER=akscluster
+echo $AKS_CLUSTER
+```
+- **Add the theree db nodepools with labels and taints**
+
+- **Note: Db nodes should be deploy in specific zone because volumes are zone restriced**
+
+```
+az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
+                    --cluster-name ${AKS_CLUSTER} \
+                    --kubernetes-version 1.18.10 \
+                    --name db1pool \
+                    --node-count 1 \
+                    --enable-cluster-autoscaler \
+                    --max-count 2 \
+                    --min-count 1 \
+                    --mode User \
+                    --node-osdisk-size 30 \
+                    --node-vm-size Standard_DS1_v2 \
+                    --os-type Linux \
+                    --labels nodepool-type=user  nodepoolos=linux server=db1 \
+                    --node-taints server=db1:NoSchedule \
+                    --tags nodepool-type=user  nodepoolos=linux server=db1 \
+                    --zones {1}
+
+az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
+                    --cluster-name ${AKS_CLUSTER} \
+                    --kubernetes-version 1.18.10 \
+                    --name db2pool \
+                    --node-count 1 \
+                    --enable-cluster-autoscaler \
+                    --max-count 2 \
+                    --min-count 1 \
+                    --mode User \
+                    --node-osdisk-size 30 \
+                    --node-vm-size Standard_DS1_v2 \
+                    --os-type Linux \
+                    --labels nodepool-type=user  nodepoolos=linux server=db1 \
+                    --node-taints server=db1:NoSchedule \
+                    --tags nodepool-type=user  nodepoolos=linux server=db1 \
+                    --zones {2}
+
+az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
+                    --cluster-name ${AKS_CLUSTER} \
+                    --kubernetes-version 1.18.10 \
+                    --name db3 \
+                    --node-count 1 \
+                    --enable-cluster-autoscaler \
+                    --max-count 2 \
+                    --min-count 1 \
+                    --mode User \
+                    --node-osdisk-size 30 \
+                    --node-vm-size Standard_DS1_v2 \
+                    --os-type Linux \
+                    --labels nodepool-type=user  nodepoolos=linux server=db3 \
+                    --node-taints server=db3:NoSchedule \
+                    --tags nodepool-type=user  nodepoolos=linux server=db3 \
+                    --zones {3}
+```
+
+- **Add additional app nodepool**
+
+```
+az aks nodepool add --resource-group ${AKS_RESOURCE_GROUP} \
+                    --cluster-name ${AKS_CLUSTER} \
+                    --kubernetes-version 1.18.10 \
+                    --name appspool \
+                    --node-count 1 \
+                    --enable-cluster-autoscaler \
+                    --max-count 2 \
+                    --min-count 1 \
+                    --mode User \
+                    --node-osdisk-size 30 \
+                    --node-vm-size Standard_DS1_v2 \
+                    --os-type Linux \
+                    --labels nodepool-type=user  nodepoolos=linux server=apps \
+                    --tags nodepool-type=user  nodepoolos=linux server=apps \
+                    --zones {1,2,3}
+```
