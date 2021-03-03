@@ -1,0 +1,2 @@
+jenkins.my.xyz
+rancher.my.xyz
