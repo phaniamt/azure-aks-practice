@@ -1,3 +1,8 @@
+### Create a docker network
+
+```
+docker network create nginx
+```
 
 ### Get the token for serviceaccount
 
