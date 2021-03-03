@@ -1,0 +1,32 @@
+version: '2'
+services:
+  jenkins:
+    image: my/jenkins:2.263.4
+    restart: unless-stopped
+    hostname: jenkins
+    volumes:
+      - /opt/jenkins-data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 8080:8080
+      - 50000:50000
+    networks:
+      - nginx
+  nginx:
+    image: jenkins-nginx
+    restart: unless-stopped
+    hostname: nginx
+    environment:
+      EMAIL: my@my.com
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      # This directory must have cert files if you want to enable SSL
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /opt/certbot/www:/var/www/certbot
+    networks:
+      - nginx
+networks:
+  nginx:
+    external: true
