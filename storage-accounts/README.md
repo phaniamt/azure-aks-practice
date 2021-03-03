@@ -57,9 +57,9 @@ az role assignment create \
 ### Login via azure cli using service-principal credentials
 
 ```
-SP_APP_ID=3fcc1d4a-98e3-4b27-a0cc-707d8727a45f
-SP_PASSWD=zqqoT5djR-Ev7xh3H_eMe9-ULb5BS.DeJv
-TN_ID=014b7515-57a1-4bf1-9ef6-87f5ec672f74
+SP_APP_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+SP_PASSWD=xxxxxxxxxxxxxxxxxxxxxxxxxx
+TN_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 CONTAINER=testing
   
 az login --service-principal --username $SP_APP_ID --password $SP_PASSWD --tenant $TN_ID
