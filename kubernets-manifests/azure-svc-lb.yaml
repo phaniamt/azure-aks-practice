@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-load-balancer
+spec:
+  selector:
+    matchLabels:
+      app: azure-load-balancer
+  template:
+    metadata:
+      labels:
+        app: azure-load-balancer
+    spec:
+      containers:
+      - image: nginx:1.19.0
+        name: azure-load-balancer
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: MC_aks-rg_akscluster_centralus
+  name: azure-load-balancer
+spec:
+  loadBalancerIP: 52.165.218.49
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app: azure-load-balancer
