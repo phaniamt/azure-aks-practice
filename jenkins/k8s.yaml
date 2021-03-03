@@ -1,0 +1,19 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: xxxxxxxxxxxx
+    server: https://xxxxxxxxxxxxxxxxxx
+  name: k8s
+contexts:
+- context:
+    cluster: k8s
+    namespace: uat
+    user: cluster-admin
+  name: k8s
+current-context: k8s
+kind: Config
+preferences: {}
+users:
+- name: cluster-admin
+  user:
+    token: XXXXXXXXXXXXXXXXXX
