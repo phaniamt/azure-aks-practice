@@ -1,0 +1,7 @@
+#cloud-config
+package_upgrade: true
+packages:
+  - nginx
+runcmd:
+  - service nginx restart
+  - sed -i "14s/nginx/$(hostname)/" /var/www/html/index.nginx-debian.html
